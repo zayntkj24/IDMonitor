@@ -1,0 +1,31 @@
+# Environment
+.env.local
+
+# Binaries
+/bin/
+*.exe
+
+# Go
+backend/idmonitor-server
+backend/idmonitor-worker
+
+# Node
+node_modules/
+frontend/dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Docker
+docker-compose.override.yml

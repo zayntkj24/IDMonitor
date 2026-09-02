@@ -1,0 +1,60 @@
+services:
+  database:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: idmonitor
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_DB: idmonitor
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U idmonitor"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://idmonitor:${DB_PASSWORD:-changeme}@database:5432/idmonitor?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-random-64-char-string-here!!}
+      SESSION_SECRET: ${SESSION_SECRET:-change-me-to-random-64-char-string-here!!}
+      TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:-change-me-totp-encryption-32-chars!}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-change-me-encryption-key-32-chars!!}
+      IDMONITOR_ADMIN_EMAIL: ${IDMONITOR_ADMIN_EMAIL:-admin@idmonitor.local}
+      IDMONITOR_ADMIN_PASSWORD: ${IDMONITOR_ADMIN_PASSWORD:-changeme}
+      APP_PORT: "8080"
+      APP_ENV: production
+      APP_DEBUG: "false"
+      NMAP_PATH: /usr/bin/nmap
+    depends_on:
+      database:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["./idmonitor-worker"]
+    environment:
+      DATABASE_URL: postgres://idmonitor:${DB_PASSWORD:-changeme}@database:5432/idmonitor?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-random-64-char-string-here!!}
+    depends_on:
+      database:
+        condition: service_healthy
+
+volumes:
+  pgdata:
